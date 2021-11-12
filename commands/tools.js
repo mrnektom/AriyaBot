@@ -1,4 +1,10 @@
 
+function wait(millis){
+	return new Promise((resolve)=>{
+		setTimeout(resolve,millis)
+	})
+}
+
 let commands = [
   {
     name:"help",
@@ -31,8 +37,7 @@ let commands = [
   	async callback(i){
   		await i.reply(i.options.getString("reason"))
   	}
-  },
-  {
+  },{
   	type:1,
   	name:"clear",
   	description:"Deletes one or more messages",
@@ -41,6 +46,10 @@ let commands = [
         type:"INTEGER",
         name:"amount",
         description:"Amount deleting messages",
+      },{
+      	type:"USER",
+      	name:"member",
+      	description:"Member to delete messages",
       }
   	],
     async callback(i){
@@ -52,19 +61,50 @@ let commands = [
           if(i.channel.lastMessage){
           	await i.channel.lastMessage.delete()
           } else {
-          	let msg = await i.channel.messages.fetch({limit:1})
-          	// console.log(msg)
-          	await msg.first().delete()
+          	await i.channel.bulkDelete(1)
           }
         }
         i.reply("Success")
-        setTimeout(()=>{
-        	i.deleteReply()
-        },2000)
+        await wait(2000)
+        i.deleteReply()
       } catch (err){
         i.reply("```\n"+err.stack+"```")
       }
     }
+  },{
+    name:"set",
+  	type:"CHAT_INPUT",
+  	description:"Commands for setting of this bot",
+  	options:[
+  	  {
+  	  	type:"SUB_COMMAND",
+  	  	name:"muterole",
+  	  	description:"Sets the role used for mute",
+  	  	options:[
+  	  	  {
+  	  		type:"ROLE",
+  	  		name:"role",
+  	  		required:true,
+  	  		description:"Role used for mute"
+  	  	  }
+  	  	]
+  	  }
+  	],
+  	async callback(i, data){
+  	  let subcommand = i.options.getSubcommand()
+  	  if(subcommand == "muterole"){
+  	  	let role = i.options.getRole("role")
+  	  	if(!role)i.reply("Дай мне роль!!!")
+  	  	if(!data.guilds)data.guilds={};
+  	  	let guildSettings = data.guilds[i.guild.id]
+  	  	if(!guildSettings)
+  	  	  guildSettings = data.guilds[i.guild.id] = {};
+  	  	guildSettings.muteRole = role.id
+  	  	i.reply("Mute role setted")
+  	  	await wait(2000)
+  	  	i.deleteReply()
+  	  }
+  	}
   }
 ]
 // console.log("tools")

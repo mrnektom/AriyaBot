@@ -1,5 +1,5 @@
 import { Client, Intents } from "discord.js"
-import { readFile } from "fs/promises"
+import { access, readFile, writeFile } from "fs/promises"
 let bot = new Client({
   intents:[
     Intents.FLAGS.GUILDS,
@@ -8,10 +8,42 @@ let bot = new Client({
   ]
 })
 import { commList } from "./commands/index.js"
-import readline from "readline"
+import readline from "readline/promises"
 let rl = readline.createInterface(process.stdin,process.stdout)
-let config = await readFile("./config.json")
-config = JSON.parse(config)
+
+
+
+let data = null
+let config = null
+try {
+  await access("./config.json")
+  config = await readFile("./config.json");
+  config = JSON.parse(config)
+} catch {
+  config = {};
+}
+try {
+  await access("./data.json")
+  data = JSON.parse(await readFile("./data.json"))
+  
+} catch {
+  data = {}
+  await writeFile("./data.json",JSON.stringify(data),{flag:"w+"})
+}
+
+rl.on("SIGINT",async ()=>{
+  let e = await rl.question("Do you want exit from this process?(y/n)")
+  if(e!=="y")return;
+  await writeFile("./config.json",JSON.stringify(config),{flag:"w+"})
+  console.log("Saving config.json")
+  await writeFile("./data.json",JSON.stringify(data),{flag:"w+"})
+  console.log("Saving data.json")
+  await bot.destroy()
+  process.exit(0)
+})
+process.on("exit",()=>{
+  console.log("exit")
+})
 
 let ready = false
 
@@ -19,34 +51,35 @@ let ready = false
 // console.log(commList)
 
 bot.on("ready",async ()=>{
-	console.log(bot.user.username);
-	ready= true
+  console.log(bot.user.username);
+  ready= true
 
-	let guilds = await bot.guilds.fetch()
-	
-	let comms = await bot.application.commands.fetch()
+  let guilds = await bot.guilds.fetch()
+  let comms = await bot.application.commands.fetch()
 
-	// console.log(comms)
-	for(let [id, c] of comms){
-		let comm = commList.find(elem=>elem.name===c.name?elem:undefined)
-		if(comm && !c.equals(comm)){
-			console.log(`Editing command: ${c.name}`)
-			c.edit(comm)
-		}else if(!comm){
-			c.delete()
-		}
-	}
+  // console.log(comms)
+  for(let [id, c] of comms){
+    let comm = commList.find(elem=>elem.name===c.name?elem:undefined)
+    if(comm && !c.equals(comm)){
+      console.log(`Editing command: ${c.name}`)
+      await c.edit(comm)
+    }else if(!comm){
+      console.log(`Deleting command: ${c.name}`)
+      await c.delete()
+    }
+  }
 
-	comms = await bot.application.commands.fetch()
+  comms = await bot.application.commands.fetch()
 
-	for(let comm of commList){
-		let c = comms.find(elem=>elem.name===comm.name)
-		if(!c){
-		    console.log(`Creating command: ${commName}`)
+  for(let comm of commList){
+    let c = comms.find(elem=>elem.name===comm.name)
+    if(!c){
+      console.log(`Creating command: ${comm.name}`)
 		    try {
 		      await bot.application.commands.create(comm)
+		      console.log(`Command "${comm.name}" created`)
 		    } catch (err){
-		    	console.log(`Falling create command: ${comm.name}`)
+		    	console.log(`Falling to create command: ${comm.name}`)
 		    	console.log(err)
 		    }
 		}
@@ -75,7 +108,7 @@ bot.on("interactionCreate",async (i) => {
     let c = commList.find(elem=>elem.name==i.commandName?elem:undefined)
     if(c){
       try {
-      	c.callback(i)
+      	c.callback(i,data)
       } catch (err){
       	console.error(err)
       	i.reply("```\nError:"+err+"```")
@@ -86,7 +119,6 @@ bot.on("interactionCreate",async (i) => {
   }
 })
 
-bot.login(config.token)
 
 rl.on("line", async (line)=>{
 	if(ready&&line!==""){
@@ -94,3 +126,29 @@ rl.on("line", async (line)=>{
 		channel.send(line.trim())
 	}
 })
+
+
+
+if(!config.token){
+  
+  console.log("Token not found")
+  let counter = 10
+  while(true){
+    counter--;
+    if(!counter)break;
+    try {
+      let token = await rl.question("Please enter your token: ")
+      if(!token.length)console.log("Recived empty token")
+      if(!token.length)continue;
+      bot.login(token)
+      config.token = token
+      break;
+    } catch (err){
+      console.error(err)
+    }
+    
+  }
+} else {
+	bot.login(config.token)
+}
+

@@ -11,6 +11,7 @@ for(let f of scripts){
   if(Array.isArray(commands)){
   	for(let c of commands){
   	  c.commands = commands;
+  	  c.category = path.parse(f).name
   	  commList.push(c)
   	}
   }
