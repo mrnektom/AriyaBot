@@ -10,13 +10,40 @@ let commands = [
     name:"help",
     description:"Shows information for commands",
     type:"CHAT_INPUT",
+    options:[
+      {
+      	name:"command",
+      	type:"STRING",
+      	description:"Help for this command"
+      }
+    ],
     async callback(i){
       let r = []
+      let comms = commands[0].commands.sort((a,b)=>{
+      	if(a.category == b.category){
+      	  if(a.name==b.name)return 0;
+      	  else if(a.name < b.name)return -1;
+      	  else return 1;
+      	} else if(a.category < b.category)return -1;
+      	else return 1;
+      })
       r.push("```\n")
-      for(let [id,c] of (await i.client.application.commands.fetch())){
+      let tc = null
+      for(let c of comms){
       	if(!c || !c.name)continue;
-      	r.push(c.name + "\n")
-      	r.push("  "+c?.description + "\n\n")
+      	if(c.category!=tc){
+      	  tc = c.category
+      	  r.push(c.category+":\n")
+      	}
+      	r.push("  "+c.name + " ")
+      	for(let option of c.options){
+      	  if(option.required){
+      	    r.push(`<${option.name}> `)
+      	  }else{
+      	  	r.push(`[${option.name}] `)
+      	  }
+      	}
+      	r.push("\n    "+c?.description + "\n\n")
       }
       r.push("```")
       i.reply(r.join(""))

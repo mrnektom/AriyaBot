@@ -1,5 +1,6 @@
 import { Client, Intents } from "discord.js"
 import { access, readFile, writeFile } from "fs/promises"
+import { ObjectGenerator } from "./modules/object_generator.js"
 let bot = new Client({
   intents:[
     Intents.FLAGS.GUILDS,
@@ -34,12 +35,12 @@ try {
 rl.on("SIGINT",async ()=>{
   let e = await rl.question("Do you want exit from this process?(y/n)")
   if(e!=="y")return;
-  await writeFile("./config.json",JSON.stringify(config),{flag:"w+"})
   console.log("Saving config.json")
-  await writeFile("./data.json",JSON.stringify(data),{flag:"w+"})
+  await writeFile("./config.json",JSON.stringify(config,null,2),{flag:"w+"})
   console.log("Saving data.json")
+  await writeFile("./data.json",JSON.stringify(data,null,2),{flag:"w+"})
   await bot.destroy()
-  process.exit(0)
+  rl.close()
 })
 process.on("exit",()=>{
   console.log("exit")
@@ -108,7 +109,11 @@ bot.on("interactionCreate",async (i) => {
     let c = commList.find(elem=>elem.name==i.commandName?elem:undefined)
     if(c){
       try {
-      	c.callback(i,data)
+        if(typeof c.callback === "function"){
+      	  c.callback(i,data)
+        } else {
+          i.reply("Sorry, this command isn't implemented")
+        }
       } catch (err){
       	console.error(err)
       	i.reply("```\nError:"+err+"```")
@@ -140,7 +145,7 @@ if(!config.token){
       let token = await rl.question("Please enter your token: ")
       if(!token.length)console.log("Recived empty token")
       if(!token.length)continue;
-      bot.login(token)
+      await bot.login(token)
       config.token = token
       break;
     } catch (err){
@@ -149,6 +154,7 @@ if(!config.token){
     
   }
 } else {
-	bot.login(config.token)
+  await bot.login(config.token)
 }
 
+console.log("Session started")
