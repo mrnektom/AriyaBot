@@ -6,13 +6,21 @@ let bot = new Client({
     Intents.FLAGS.GUILDS,
     Intents.FLAGS.GUILD_MESSAGES,
     Intents.FLAGS.DIRECT_MESSAGES
+  ],
+  partials:[
+    "CHANNEL"
   ]
 })
-import { commList } from "./commands/index.js"
+import { commList, errors } from "./commands/index.js"
 import readline from "readline/promises"
+
+if(errors.length !== 0){
+  errors.forEach(err=>{
+  	throw err
+  })
+}
+
 let rl = readline.createInterface(process.stdin,process.stdout)
-
-
 
 let data = null
 let config = null
@@ -21,14 +29,14 @@ try {
   config = await readFile("./config.json");
   config = JSON.parse(config)
 } catch {
-  config = {};
+  config = ObjectGenerator({});
 }
 try {
   await access("./data.json")
-  data = JSON.parse(await readFile("./data.json"))
+  data = ObjectGenerator(JSON.parse(await readFile("./data.json")))
   
 } catch {
-  data = {}
+  data = ObjectGenerator({})
   await writeFile("./data.json",JSON.stringify(data),{flag:"w+"})
 }
 
@@ -46,14 +54,13 @@ process.on("exit",()=>{
   console.log("exit")
 })
 
-let ready = false
 
 
 // console.log(commList)
 
 bot.on("ready",async ()=>{
   console.log(bot.user.username);
-  ready= true
+  
 
   let guilds = await bot.guilds.fetch()
   let comms = await bot.application.commands.fetch()
@@ -100,7 +107,7 @@ bot.on("messageCreate",msg => {
   
   
   if(msg.author.id!=bot.user.id){
-  	// msg.channel.send(msg.content)
+  	msg.channel.send(msg.content)
   }
 })
 
