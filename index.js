@@ -19,9 +19,7 @@ if(errors.length !== 0){
   	throw err
   })
 }
-
 let rl = readline.createInterface(process.stdin,process.stdout)
-
 let data = null
 let config = null
 try {
@@ -34,12 +32,10 @@ try {
 try {
   await access("./data.json")
   data = ObjectGenerator(JSON.parse(await readFile("./data.json")))
-  
 } catch {
   data = ObjectGenerator({})
   await writeFile("./data.json",JSON.stringify(data),{flag:"w+"})
 }
-
 rl.on("SIGINT",async ()=>{
   let e = await rl.question("Do you want exit from this process?(y/n)")
   if(e!=="y")return;
@@ -53,18 +49,11 @@ rl.on("SIGINT",async ()=>{
 process.on("exit",()=>{
   console.log("exit")
 })
-
-
-
 // console.log(commList)
-
 bot.on("ready",async ()=>{
   console.log(bot.user.username);
-  
-
   let guilds = await bot.guilds.fetch()
   let comms = await bot.application.commands.fetch()
-
   // console.log(comms)
   for(let [id, c] of comms){
     let comm = commList.find(elem=>elem.name===c.name?elem:undefined)
@@ -76,9 +65,7 @@ bot.on("ready",async ()=>{
       await c.delete()
     }
   }
-
   comms = await bot.application.commands.fetch()
-
   for(let comm of commList){
     let c = comms.find(elem=>elem.name===comm.name)
     if(!c){
@@ -93,7 +80,6 @@ bot.on("ready",async ()=>{
 		}
 		// console.log(c)
 	}
-	
 	// comms = await bot.application.commands.set(commList)
 	// console.log(comms)
 	/*let c = await bot.application.commands.create({
@@ -102,15 +88,11 @@ bot.on("ready",async ()=>{
 	})
 	console.log(c)*/
 })
-
 bot.on("messageCreate",msg => {
-  
-  
   if(msg.author.id!=bot.user.id){
   	msg.channel.send(msg.content)
   }
 })
-
 bot.on("interactionCreate",async (i) => {
   if(i.isCommand){
     let c = commList.find(elem=>elem.name==i.commandName?elem:undefined)
@@ -130,19 +112,13 @@ bot.on("interactionCreate",async (i) => {
     }
   }
 })
-
-
 rl.on("line", async (line)=>{
-	if(ready&&line!==""){
-		let channel = await bot.channels.fetch("901091663844376576")
-		channel.send(line.trim())
-	}
+  if(ready&&line!==""){
+    let channel = await bot.channels.fetch("901091663844376576")
+    channel.send(line.trim())
+  }
 })
-
-
-
 if(!config.token){
-  
   console.log("Token not found")
   let counter = 10
   while(true){
@@ -158,10 +134,8 @@ if(!config.token){
     } catch (err){
       console.error(err)
     }
-    
   }
 } else {
   await bot.login(config.token)
 }
-
 console.log("Session started")
